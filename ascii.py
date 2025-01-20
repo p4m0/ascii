@@ -90,8 +90,8 @@ def image_to_ascii(path_to_image, image_scale_factor = 0.1):
     original_ascii = np.array([[map_to_char(resized_image[y, x], scale_factor) for x in range(width)] for y in range(height)])
     return original_ascii
 
-image_scale_factor = 0.1
-original_ascii = image_to_ascii("test.png", image_scale_factor)
+image_scale_factor = 0.3
+original_ascii = image_to_ascii("test2.png", image_scale_factor)
 modified_ascii = np.copy(original_ascii)
 max_chance = 0.1
 weights = [max_chance / (i + 1) for i in range(original_ascii.shape[0])]
@@ -102,162 +102,108 @@ print(weights)
 print(type(modified_ascii))
 time.sleep(2)
 
-def pour_effect(ascii_array, empty_char=' '):
-    """Simulate pouring effect by making characters fall down."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i, row in reversed(list(enumerate(modified_ascii))):
-        for j, char in enumerate(row):
-            if char != empty_char and i < len(modified_ascii) - 1:
-                if modified_ascii[i + 1][j] == empty_char:
-                    modified_ascii[i + 1][j], modified_ascii[i][j] = char, empty_char
-    return np.array(modified_ascii)
+def pour_effect(modified_ascii, empty_char=' '):
+    """Simulates a pouring effect where characters fall down."""
+    for i in reversed(range(1, modified_ascii.shape[0])):
+        for j in range(modified_ascii.shape[1]):
+            if modified_ascii[i, j] == empty_char and modified_ascii[i - 1, j] != empty_char:
+                modified_ascii[i, j] = modified_ascii[i - 1, j]
+                modified_ascii[i - 1, j] = empty_char
+    return modified_ascii
 
-def drip_effect(ascii_array, empty_char=' '):
-    """Simulate dripping effect by randomly making characters fall down."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i in reversed(range(len(modified_ascii) - 1)):
-        for j in range(len(modified_ascii[i])):
-            if modified_ascii[i][j] != empty_char and modified_ascii[i + 1][j] == empty_char:
-                if random.random() < 0.5:  # 50% chance to drip down
-                    modified_ascii[i + 1][j], modified_ascii[i][j] = modified_ascii[i][j], empty_char
-    return np.array(modified_ascii)
+def drip_effect(modified_ascii, empty_char=' '):
+    """Simulates a dripping effect where characters fall randomly down."""
+    for j in range(modified_ascii.shape[1]):
+        for i in reversed(range(1, modified_ascii.shape[0])):
+            if modified_ascii[i, j] == empty_char and modified_ascii[i - 1, j] != empty_char and random.random() < 0.3:
+                modified_ascii[i, j] = modified_ascii[i - 1, j]
+                modified_ascii[i - 1, j] = empty_char
+    return modified_ascii
 
-def wave_effect(ascii_array, amplitude=2, frequency=0.2):
-    """Simulate wave effect by shifting characters in a sine wave pattern."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i, row in enumerate(modified_ascii):
-        shift = int(amplitude * math.sin(frequency * i))
-        modified_ascii[i] = row[-shift:] + row[:-shift] if shift else row
-    return np.array(modified_ascii)
+def wave_effect(modified_ascii, amplitude=1, frequency=0.1, time_step=0):
+    """Simulates a wave effect moving horizontally."""
+    for i in range(modified_ascii.shape[0]):
+        offset = int(amplitude * math.sin(frequency * (i + time_step)))
+        modified_ascii[i] = np.roll(modified_ascii[i], offset)
+    return modified_ascii
 
-def shake_effect(ascii_array):
-    """Simulate shaking effect by shifting characters left or right randomly."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i in range(len(modified_ascii)):
-        if random.random() < 0.3:  # 30% chance to shake this row
-            shift = random.choice([-1, 1])
-            modified_ascii[i] = modified_ascii[i][shift:] + modified_ascii[i][:shift]
-    return np.array(modified_ascii)
+def shake_effect(modified_ascii, intensity=1):
+    """Simulates a shaking effect by shifting characters randomly."""
+    for i in range(modified_ascii.shape[0]):
+        shift = random.randint(-intensity, intensity)
+        modified_ascii[i] = np.roll(modified_ascii[i], shift)
+    return modified_ascii
 
-def swirl_effect(ascii_array):
-    """Simulate swirl effect by rotating characters around the center."""
-    modified_ascii = [list(row) for row in ascii_array]
-    center_x, center_y = len(modified_ascii) // 2, len(modified_ascii[0]) // 2
-    
-    for i in range(len(modified_ascii)):
-        for j in range(len(modified_ascii[i])):
-            dx, dy = j - center_y, i - center_x
-            new_x = center_x + dy
-            new_y = center_y - dx
-            if 0 <= new_x < len(modified_ascii) and 0 <= new_y < len(modified_ascii[0]):
-                modified_ascii[i][j], modified_ascii[new_x][new_y] = modified_ascii[new_x][new_y], modified_ascii[i][j]
-
-    return np.array(modified_ascii)
-
-def erosion_effect(ascii_array, empty_char=' '):
+def erosion_effect(modified_ascii, empty_char=' '):
     """Gradually erodes the ASCII art by replacing random characters with spaces."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i in range(len(modified_ascii)):
-        for j in range(len(modified_ascii[i])):
-            if modified_ascii[i][j] != empty_char and random.random() < 0.1:
-                modified_ascii[i][j] = empty_char
-    return np.array(modified_ascii)
+    erosion_prob = 0.1  # Probability of eroding a character
 
-def wind_effect(ascii_array, empty_char=' '):
+    erosion_mask = (modified_ascii != empty_char) & (np.random.rand(*modified_ascii.shape) < erosion_prob)
+    modified_ascii[erosion_mask] = empty_char
+    return modified_ascii
+
+def wind_effect(modified_ascii, empty_char=' '):
     """Simulate wind effect by moving characters to the right."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i in range(len(modified_ascii)):
-        for j in reversed(range(len(modified_ascii[i]) - 1)):
-            if modified_ascii[i][j] != empty_char and modified_ascii[i][j + 1] == empty_char:
-                modified_ascii[i][j + 1], modified_ascii[i][j] = modified_ascii[i][j], empty_char
-    return np.array(modified_ascii)
+    for i in range(modified_ascii.shape[0]):
+        for j in range(modified_ascii.shape[1] - 2, -1, -1):
+            if modified_ascii[i, j] != empty_char and modified_ascii[i, j + 1] == empty_char:
+                modified_ascii[i, j + 1], modified_ascii[i, j] = modified_ascii[i, j], empty_char
+    return modified_ascii
 
-def rain_effect(ascii_array, empty_char=' ', rain_char='|'):
+def rain_effect(modified_ascii, empty_char=' ', rain_char='|'):
     """Simulate rain effect by adding falling rain droplets."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for _ in range(len(modified_ascii[0]) // 4):
-        drop_col = random.randint(0, len(modified_ascii[0]) - 1)
-        if modified_ascii[0][drop_col] == empty_char:
-            modified_ascii[0][drop_col] = rain_char
-    
-    for i in reversed(range(len(modified_ascii) - 1)):
-        for j in range(len(modified_ascii[i])):
-            if modified_ascii[i][j] == rain_char and modified_ascii[i + 1][j] == empty_char:
-                modified_ascii[i + 1][j], modified_ascii[i][j] = rain_char, empty_char
-    return np.array(modified_ascii)
+    # Introduce new raindrops
+    drop_cols = np.random.choice(modified_ascii.shape[1], size=modified_ascii.shape[1] // 4, replace=False)
+    modified_ascii[0, drop_cols] = rain_char
 
-def glitch_effect(ascii_array, empty_char=' '):
+    # Move raindrops down
+    for i in range(modified_ascii.shape[0] - 2, -1, -1):
+        for j in range(modified_ascii.shape[1]):
+            if modified_ascii[i, j] == rain_char and modified_ascii[i + 1, j] == empty_char:
+                modified_ascii[i + 1, j], modified_ascii[i, j] = rain_char, empty_char
+    return modified_ascii
+
+def glitch_effect(modified_ascii):
     """Simulate glitch effect by swapping random characters."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for _ in range(len(modified_ascii) * len(modified_ascii[0]) // 10):
-        x1, y1 = random.randint(0, len(modified_ascii) - 1), random.randint(0, len(modified_ascii[0]) - 1)
-        x2, y2 = random.randint(0, len(modified_ascii) - 1), random.randint(0, len(modified_ascii[0]) - 1)
-        modified_ascii[x1][y1], modified_ascii[x2][y2] = modified_ascii[x2][y2], modified_ascii[x1][y1]
-    return np.array(modified_ascii)
+    num_swaps = (modified_ascii.size // 10)
 
-def expansion_effect(ascii_array, empty_char=' '):
+    for _ in range(num_swaps):
+        x1, y1 = np.random.randint(0, modified_ascii.shape[0]), np.random.randint(0, modified_ascii.shape[1])
+        x2, y2 = np.random.randint(0, modified_ascii.shape[0]), np.random.randint(0, modified_ascii.shape[1])
+        modified_ascii[x1, y1], modified_ascii[x2, y2] = modified_ascii[x2, y2], modified_ascii[x1, y1]
+    
+    return modified_ascii
+
+def expansion_effect(modified_ascii, empty_char=' '):
     """Simulate expansion effect by growing outward from the center."""
-    modified_ascii = [list(row) for row in ascii_array]
-    center_x, center_y = len(modified_ascii) // 2, len(modified_ascii[0]) // 2
-    for i in range(len(modified_ascii)):
-        for j in range(len(modified_ascii[i])):
-            if modified_ascii[i][j] == empty_char and random.random() < 0.05:
-                if abs(i - center_x) + abs(j - center_y) < len(modified_ascii) // 2:
-                    modified_ascii[i][j] = '*'
-    return np.array(modified_ascii)
+    center_x, center_y = modified_ascii.shape[0] // 2, modified_ascii.shape[1] // 2
 
-def mirror_effect(ascii_array):
+    for i in range(modified_ascii.shape[0]):
+        for j in range(modified_ascii.shape[1]):
+            if modified_ascii[i, j] == empty_char:
+                if abs(i - center_x) + abs(j - center_y) < modified_ascii.shape[0] // 2 and random.random() < 0.05:
+                    modified_ascii[i, j] = '*'
+    return modified_ascii
+
+def mirror_effect(modified_ascii):
     """Mirror the ASCII image horizontally."""
-    modified_ascii = [list(row[::-1]) for row in ascii_array]
-    return np.array(modified_ascii)
+    return np.fliplr(modified_ascii)
 
-def scroll_effect(ascii_array, direction='up'):
+def scroll_effect(modified_ascii, direction='up'):
     """Scroll the ASCII image vertically up or down."""
-    modified_ascii = [list(row) for row in ascii_array]
     if direction == 'up':
-        modified_ascii.append(modified_ascii.pop(0))
+        modified_ascii = np.roll(modified_ascii, -1, axis=0)
     else:
-        modified_ascii.insert(0, modified_ascii.pop())
-    return np.array(modified_ascii)
+        modified_ascii = np.roll(modified_ascii, 1, axis=0)
+    return modified_ascii
 
-def pixelation_effect(ascii_array, block_size=2, empty_char=' '):
+def pixelation_effect(modified_ascii, block_size=2, empty_char=' '):
     """Simulate pixelation effect by replacing blocks of characters with empty spaces."""
-    modified_ascii = [list(row) for row in ascii_array]
-    for i in range(0, len(modified_ascii), block_size):
-        for j in range(0, len(modified_ascii[i]), block_size):
+    for i in range(0, modified_ascii.shape[0], block_size):
+        for j in range(0, modified_ascii.shape[1], block_size):
             if random.random() < 0.5:
-                for x in range(block_size):
-                    for y in range(block_size):
-                        if i + x < len(modified_ascii) and j + y < len(modified_ascii[i]):
-                            modified_ascii[i + x][j + y] = empty_char
-    return np.array(modified_ascii)
-
-def fire_effect(ascii_array):
-    """Simulate fire effect by moving characters upwards and adding flicker."""
-    modified_ascii = [list(row) for row in ascii_array]
-    fire_chars = ['.', '*', '~', '^']
-    for i in reversed(range(1, len(modified_ascii))):
-        for j in range(len(modified_ascii[i])):
-            if modified_ascii[i][j] in fire_chars:
-                modified_ascii[i - 1][j] = modified_ascii[i][j]
-                modified_ascii[i][j] = ' '
-    for j in range(len(modified_ascii[-1])):
-        if random.random() < 0.3:
-            modified_ascii[-1][j] = random.choice(fire_chars)
-    return np.array(modified_ascii)
-
-def ripple_effect(ascii_array, time_step=0):
-    """Simulate ripple effect expanding outward in waves."""
-    modified_ascii = [list(row) for row in ascii_array]
-    center_x, center_y = len(modified_ascii) // 2, len(modified_ascii[0]) // 2
-    for i in range(len(modified_ascii)):
-        for j in range(len(modified_ascii[i])):
-            distance = math.sqrt((i - center_x)**2 + (j - center_y)**2)
-            if int(distance) % 4 == time_step % 4:
-                modified_ascii[i][j] = '*'
-            else:
-                modified_ascii[i][j] = ' '
-    return np.array(modified_ascii)
+                modified_ascii[i:i+block_size, j:j+block_size] = empty_char
+    return modified_ascii
 
 
 def matrix_effect(modified_ascii):
@@ -286,18 +232,19 @@ def matrix_effect(modified_ascii):
             
             if i  > random.randint(0,100):
                 modified_ascii[i][j] = original_ascii[i][j]
+                
     return modified_ascii
 
-effect_functions = [matrix_effect, pour_effect, drip_effect, wave_effect, shake_effect, swirl_effect, 
+effect_functions = [matrix_effect, pour_effect, drip_effect, wave_effect, shake_effect, 
     erosion_effect, wind_effect, rain_effect, glitch_effect, expansion_effect,
-    mirror_effect, scroll_effect, pixelation_effect, fire_effect, ripple_effect
+    mirror_effect, scroll_effect, pixelation_effect
 ]
 effect_index = 0  # Start with the first effect
 
 while True:
     #print(keyboard.read_key())
     if keyboard.is_pressed('R'):
-        modified_ascii = original_ascii
+        modified_ascii[:] = original_ascii
     # Listen for key presses
     if keyboard.is_pressed('right'):
         effect_index = (effect_index + 1) % len(effect_functions)
