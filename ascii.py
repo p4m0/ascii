@@ -5,11 +5,21 @@ import keyboard
 import random
 import os
 import math
+
+PATH_TO_IMAGE = "peppers.png"
+
+#Use smaller image_scale_factor ((e.g. 0.1) for bigger images
+# and bigger (i.e. 1.0 for smaller images)
+IMAGE_SCALE_FACTOR = 0.5
+
 # Character set
 #c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
 #c = ' .`^",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$'
 c = ' .:-=+*#%@'
 #c = '@#%+=-:. '
+
+print("Press R to reset the image and RIGHT/LEFT arrows to rotate between effects")
+print("You may need to press multiple times due to the high refresh rate")
 
 
 # Create a function to map grayscale values to characters
@@ -168,28 +178,21 @@ def matrix_effect(modified_ascii):
 
 
 
+#ChatGPT was utilized in this project. Most of the effects were a result of a simply query
+
 effect_functions = [matrix_effect, pour_effect, drip_effect, shake_effect, 
     erosion_effect, wind_effect, rain_effect, glitch_effect,
     mirror_effect, scroll_effect, pixelation_effect
 ]
 effect_index = 0  # Start with the first effect
 
-# You can try different character sets
-#c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
-#c = ' .`^",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$'
-#c = ' .:-=+*#%@'
-#c = '@#%+=-:. '
 
-#Use smaller image_scale_factor ((e.g. 0.1) for bigger images
-# and bigger (i.e. 1.0 for smaller images)
-IMAGE_SCALE_FACTOR = 0.1
-original_ascii = image_to_ascii("test.png", IMAGE_SCALE_FACTOR)
+original_ascii = image_to_ascii(PATH_TO_IMAGE, IMAGE_SCALE_FACTOR)
 modified_ascii = np.copy(original_ascii)
 
 #weights used to generate droplets in the matrix type of rain effect
 max_chance = 0.1
 weights = [max_chance / (i + 1) for i in range(original_ascii.shape[0])]
-print("Press R to reset the image and RIGHT/LEFT arrows to rotate between effects")
 time.sleep(2)
 
 while True:
@@ -218,7 +221,7 @@ while True:
     print(original_ascii_art)
     print(effect_functions[effect_index])
     
-    time.sleep(0.01)
+    time.sleep(0.02)
     
                         
     
