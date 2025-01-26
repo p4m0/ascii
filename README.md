@@ -1,9 +1,9 @@
 # Small ascii project
 
-Requirements.txt:
-keyboard==0.13.5
-numpy==2.2.2
-opencv-python==4.11.0.86
+Requirements.txt: \
+keyboard==0.13.5 \
+numpy==2.2.2 \
+opencv-python==4.11.0.86 \
 
 How to run:
 1. pip install -r requirements.txt
